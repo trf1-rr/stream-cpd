@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Monitor de Cameras</title>
+<style>
+  :root {
+    --bg: #0d1117; --panel: #161b22; --border: #30363d;
+    --text: #e6edf3; --muted: #8b949e; --accent: #3fb950; --danger: #f85149;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg); color: var(--text);
+    font: 14px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    min-height: 100vh;
+  }
+  header {
+    display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+    padding: 12px 20px; background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 10;
+  }
+  h1 { font-size: 16px; font-weight: 600; margin-right: auto; }
+  h1 span { color: var(--muted); font-weight: 400; font-size: 13px; }
+  label { color: var(--muted); font-size: 13px; }
+  select, button {
+    background: #21262d; color: var(--text);
+    border: 1px solid var(--border); border-radius: 6px;
+    padding: 6px 12px; font-size: 13px; cursor: pointer;
+  }
+  button:hover, select:hover { border-color: #6e7681; }
+  main { padding: 16px; }
+  .grid { display: grid; gap: 12px; }
+  .grid.cols-1 { grid-template-columns: 1fr; }
+  .grid.cols-2 { grid-template-columns: repeat(2, 1fr); }
+  .grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+  @media (max-width: 800px) { .grid { grid-template-columns: 1fr !important; } }
+  .cam {
+    background: #000; border: 1px solid var(--border); border-radius: 8px;
+    overflow: hidden; position: relative; aspect-ratio: 16 / 9;
+  }
+  .cam video { width: 100%; height: 100%; display: block; object-fit: contain; background: #000; }
+  .cam .bar {
+    position: absolute; inset: 0 0 auto 0; display: flex; align-items: center;
+    gap: 8px; padding: 6px 10px; font-size: 12px;
+    background: linear-gradient(#000c, #0000); pointer-events: none;
+  }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex: none; }
+  .dot.live { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+  .dot.err  { background: var(--danger); }
+  .cam .status {
+    position: absolute; inset: 0; display: flex; align-items: center;
+    justify-content: center; text-align: center; padding: 20px;
+    color: var(--muted); font-size: 13px; background: #000;
+  }
+  .cam .status.hidden { display: none; }
+  .cam .status.error { color: var(--danger); }
+  .actions { margin-left: auto; display: flex; gap: 6px; pointer-events: auto; }
+  .actions button { padding: 2px 8px; font-size: 11px; background: #0008; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Monitor de Cameras <span id="host"></span></h1>
+  <label>Qualidade
+    <select id="subtype">
+      <option value="1" selected>Substream (leve)</option>
+      <option value="0">Principal (HD)</option>
+    </select>
+  </label>
+  <label>Layout
+    <select id="layout">
+      <option value="1">1 coluna</option>
+      <option value="2" selected>2 colunas</option>
+      <option value="3">3 colunas</option>
+    </select>
+  </label>
+  <button id="reload">Recarregar tudo</button>
+</header>
+<main><div id="grid" class="grid cols-2"></div></main>
+
+<script src="/static/hls.min.js"></script>
+<script src="/static/player.js"></script>
+</body>
+</html>

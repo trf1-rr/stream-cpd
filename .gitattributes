@@ -1,0 +1,4 @@
+# Normaliza para LF: a imagem e construida em Linux
+* text=auto eol=lf
+*.png binary
+*.jpg binary
