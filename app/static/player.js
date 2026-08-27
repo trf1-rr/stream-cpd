@@ -12,23 +12,82 @@
   var hudOn = true;
   var hudTimer = null;
 
+  // Velocimetro: arco de 270deg com vao embaixo (225deg -> 495deg)
+  var G_START = 225, G_SWEEP = 270, GC = 60, GR = 46;
+
+  function polar(r, ang) {
+    var a = (ang - 90) * Math.PI / 180;
+    return [GC + r * Math.cos(a), GC + r * Math.sin(a)];
+  }
+
+  function arcPath(r, a0, a1) {
+    var n = 40, d = "";
+    for (var i = 0; i <= n; i++) {
+      var p = polar(r, a0 + (a1 - a0) * i / n);
+      d += (i ? "L" : "M") + p[0].toFixed(2) + " " + p[1].toFixed(2) + " ";
+    }
+    return d.trim();
+  }
+
+  function buildGauge(s) {
+    var hasVal = s.value != null;
+    var min = s.min != null ? s.min : 0;
+    var max = s.max != null ? s.max : 100;
+    var f = hasVal ? (s.value - min) / (max - min) : 0;
+    f = Math.max(0, Math.min(1, f));
+    var va = G_START + f * G_SWEEP;
+
+    var state = "";
+    if (hasVal && s.crit != null && s.value >= s.crit) state = "crit";
+    else if (hasVal && s.warn != null && s.value >= s.warn) state = "warn";
+    var color = state === "crit" ? "#f85149" : state === "warn" ? "#f0b429" : "#3fb950";
+
+    var track = arcPath(GR, G_START, G_START + G_SWEEP);
+    var fill = arcPath(GR, G_START, va);
+
+    var ticks = "";
+    [0, 0.25, 0.5, 0.75, 1].forEach(function (t) {
+      var ta = G_START + t * G_SWEEP;
+      var o = polar(GR, ta), i = polar(GR - 7, ta);
+      ticks += '<line x1="' + o[0].toFixed(1) + '" y1="' + o[1].toFixed(1) +
+        '" x2="' + i[0].toFixed(1) + '" y2="' + i[1].toFixed(1) +
+        '" stroke="rgba(255,255,255,.4)" stroke-width="1.6"/>';
+    });
+
+    var needle = "";
+    if (hasVal) {
+      var tip = polar(GR - 8, va);
+      var b1 = polar(6, va + 90), b2 = polar(6, va - 90);
+      needle =
+        '<polygon points="' + tip[0].toFixed(1) + ',' + tip[1].toFixed(1) + ' ' +
+        b1[0].toFixed(1) + ',' + b1[1].toFixed(1) + ' ' +
+        b2[0].toFixed(1) + ',' + b2[1].toFixed(1) + '" fill="' + color + '"/>' +
+        '<circle cx="' + GC + '" cy="' + GC + '" r="5.5" fill="' + color + '"/>' +
+        '<circle cx="' + GC + '" cy="' + GC + '" r="2.5" fill="#0d1117"/>';
+    }
+
+    var svg =
+      '<svg viewBox="0 0 120 120">' +
+        '<path d="' + track + '" fill="none" stroke="rgba(255,255,255,.12)" stroke-width="9" stroke-linecap="round"/>' +
+        (hasVal ? '<path d="' + fill + '" fill="none" stroke="' + color + '" stroke-width="9" stroke-linecap="round"/>' : '') +
+        ticks + needle +
+      '</svg>';
+
+    var unit = s.unit ? '<small>' + s.unit + '</small>' : '';
+    return '<div class="gauge ' + state + '">' + svg +
+      '<div class="icon">' + (s.icon || '') + '</div>' +
+      '<div class="val">' + (hasVal ? String(s.value) : '--') + unit + '</div>' +
+      '</div>';
+  }
+
   function buildHud(hud, data) {
     hud.innerHTML = "";
     if (!data || data.enabled === false || data.ok === false) return;
-    (data.sensors || []).forEach(function (s) {
-      var cls = "metric";
-      if (s.value != null && s.crit != null && s.value >= s.crit) cls += " crit";
-      else if (s.value != null && s.warn != null && s.value >= s.warn) cls += " warn";
-      var m = el("div", cls);
-      m.appendChild(el("div", "k", s.label));
-      var v = el("div", "v", s.value == null ? "--" : String(s.value));
-      if (s.unit) v.appendChild(el("small", null, s.unit));
-      m.appendChild(v);
-      hud.appendChild(m);
-    });
+    var html = (data.sensors || []).map(buildGauge).join("");
     (data.alarms || []).forEach(function (label) {
-      hud.appendChild(el("div", "alarm", "⚠ " + label));
+      html += '<div class="alarm">⚠ ' + label + '</div>';
     });
+    hud.innerHTML = html;
   }
 
   function refreshHuds() {

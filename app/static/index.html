@@ -58,34 +58,39 @@
   }
   .cam .status.hidden { display: none; }
   .cam .status.error { color: var(--danger); }
-  /* HUD de sensores sobreposto ao video */
+  /* HUD de sensores (velocimetros) sobreposto ao video */
   .cam .hud {
-    position: absolute; top: 40px; left: 10px; z-index: 5;
-    display: flex; gap: 8px; align-items: stretch; flex-wrap: wrap;
+    position: absolute; top: 44px; left: 12px; z-index: 5;
+    display: flex; gap: 12px; align-items: flex-start; flex-wrap: wrap;
     pointer-events: none; font-variant-numeric: tabular-nums;
   }
   .cam .hud.hidden { display: none; }
-  .cam .hud .metric {
-    background: rgba(13, 17, 23, .52);
-    -webkit-backdrop-filter: blur(9px); backdrop-filter: blur(9px);
-    border: 1px solid rgba(255, 255, 255, .14); border-radius: 10px;
-    padding: 5px 11px; min-width: 58px;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, .4);
+  .cam .hud .gauge {
+    position: relative; width: 132px; height: 132px;
+    background: rgba(13, 17, 23, .5);
+    -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, .13); border-radius: 16px;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, .45);
   }
-  .cam .hud .metric .k {
-    color: var(--muted); font-size: 10px; font-weight: 500;
-    text-transform: uppercase; letter-spacing: .5px; white-space: nowrap;
+  .cam .hud .gauge svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .cam .hud .gauge .icon {
+    position: absolute; top: 20px; left: 0; right: 0; text-align: center;
+    font-size: 22px; line-height: 1; z-index: 2;
   }
-  .cam .hud .metric .v { font-size: 21px; font-weight: 700; line-height: 1.15; color: var(--text); }
-  .cam .hud .metric .v small { font-size: 11px; font-weight: 400; color: var(--muted); margin-left: 2px; }
-  .cam .hud .metric.warn .v { color: #d29922; }
-  .cam .hud .metric.crit .v { color: var(--danger); }
+  .cam .hud .gauge .val {
+    position: absolute; bottom: 15px; left: 0; right: 0; text-align: center;
+    font-size: 24px; font-weight: 800; line-height: 1; color: var(--text);
+    text-shadow: 0 1px 4px rgba(0, 0, 0, .75); z-index: 2;
+  }
+  .cam .hud .gauge .val small { font-size: 12px; font-weight: 500; color: var(--muted); margin-left: 1px; }
+  .cam .hud .gauge.warn .val { color: #f0b429; }
+  .cam .hud .gauge.crit .val { color: var(--danger); }
   .cam .hud .alarm {
     display: flex; align-items: center; gap: 6px;
-    background: rgba(248, 81, 73, .9); color: #fff; border-radius: 10px;
-    padding: 5px 11px; font-size: 12px; font-weight: 700; white-space: nowrap;
-    box-shadow: 0 2px 12px rgba(248, 81, 73, .45);
-    animation: hudpulse 1.3s ease-in-out infinite;
+    background: rgba(248, 81, 73, .92); color: #fff; border-radius: 12px;
+    padding: 8px 13px; font-size: 13px; font-weight: 700; white-space: nowrap;
+    box-shadow: 0 4px 16px rgba(248, 81, 73, .5);
+    animation: hudpulse 1.3s ease-in-out infinite; align-self: center;
   }
   @keyframes hudpulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
   .actions { margin-left: auto; display: flex; gap: 6px; pointer-events: auto; }

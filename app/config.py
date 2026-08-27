@@ -95,9 +95,11 @@ settings = Settings()
 # opcionais colorem o valor no player.
 SNMP_SENSORS: list[dict] = [
     {"oid": "1.3.6.1.4.1.42588.3.4.2.0.0", "label": "Temp. Interna",
-     "unit": "°C", "scale": 0.1, "digits": 1, "warn": 24, "crit": 27},
+     "unit": "°C", "icon": "🌡️", "scale": 0.1, "digits": 1,
+     "min": 10, "max": 40, "warn": 24, "crit": 27},
     {"oid": "1.3.6.1.4.1.42588.3.4.2.1.0", "label": "Umidade",
-     "unit": "%", "scale": 1, "digits": 0, "warn": 65, "crit": 75},
+     "unit": "%", "icon": "💧", "scale": 1, "digits": 0,
+     "min": 0, "max": 100, "warn": 65, "crit": 75},
 ]
 
 # Alarmes digitais (0 = inativo). Aparecem como selo vermelho quando != 0.

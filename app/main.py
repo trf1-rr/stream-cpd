@@ -166,6 +166,9 @@ async def sensors() -> dict:
                     "label": spec["label"],
                     "value": value,
                     "unit": spec.get("unit", ""),
+                    "icon": spec.get("icon", ""),
+                    "min": spec.get("min", 0),
+                    "max": spec.get("max", 100),
                     "warn": spec.get("warn"),
                     "crit": spec.get("crit"),
                 }
