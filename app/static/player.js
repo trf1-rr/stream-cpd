@@ -13,6 +13,7 @@
   var hudTimer = null;
 
   var HUD_DEFAULTS = {
+    mode: "gauge",             // "gauge" (velocimetro) | "text" (somente texto)
     pos: "top-left",
     scale: 1.0,
     opacity: 0.5,
@@ -20,7 +21,11 @@
     colorOk: "#3fb950",
     colorWarn: "#f0b429",
     colorCrit: "#f85149",
-    colorText: "#e6edf3"
+    colorText: "#e6edf3",
+    title: "",
+    titleSize: 16,
+    titleColor: "#e6edf3",
+    titleFont: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif"
   };
 
   function loadHudCfg() {
@@ -41,15 +46,21 @@
 
   function styleHud(hud) {
     var c = hudCfg;
-    hud.style.top = hud.style.right = hud.style.bottom = hud.style.left = "";
     var isRight = c.pos.indexOf("right") >= 0;
     var isCenter = c.pos.indexOf("center") >= 0;
     var isBottom = c.pos.indexOf("bottom") >= 0;
-    if (isBottom) hud.style.bottom = "12px"; else hud.style.top = "44px";
+    // Sempre define os quatro lados (px ou "auto") para sobrepor a CSS base;
+    // limpar com "" voltava ao top/left do stylesheet e travava no canto.
+    hud.style.top = isBottom ? "auto" : "44px";
+    hud.style.bottom = isBottom ? "12px" : "auto";
     var tx = "";
-    if (isCenter) { hud.style.left = "50%"; tx = "translateX(-50%) "; }
-    else if (isRight) hud.style.right = "12px";
-    else hud.style.left = "12px";
+    if (isCenter) {
+      hud.style.left = "50%"; hud.style.right = "auto"; tx = "translateX(-50%) ";
+    } else if (isRight) {
+      hud.style.left = "auto"; hud.style.right = "12px";
+    } else {
+      hud.style.left = "12px"; hud.style.right = "auto";
+    }
     hud.style.transformOrigin =
       (isCenter ? "center" : isRight ? "right" : "left") + " " + (isBottom ? "bottom" : "top");
     hud.style.transform = tx + "scale(" + c.scale + ")";
@@ -58,6 +69,9 @@
     hud.style.setProperty("--hud-text", c.colorText);
     hud.style.setProperty("--hud-warn", c.colorWarn);
     hud.style.setProperty("--hud-crit", c.colorCrit);
+    hud.style.setProperty("--hud-title-size", c.titleSize + "px");
+    hud.style.setProperty("--hud-title-color", c.titleColor);
+    hud.style.setProperty("--hud-title-font", c.titleFont);
   }
 
   function applyAllHuds() {
@@ -132,12 +146,43 @@
       '</div>';
   }
 
+  function esc(s) {
+    return String(s).replace(/[&<>"]/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
+    });
+  }
+
+  function stateOf(s) {
+    if (s.value == null) return "";
+    if (s.crit != null && s.value >= s.crit) return "crit";
+    if (s.warn != null && s.value >= s.warn) return "warn";
+    return "";
+  }
+
+  function buildTextRow(s) {
+    var st = stateOf(s);
+    var unit = s.unit ? "<small>" + esc(s.unit) + "</small>" : "";
+    return '<div class="trow' + (st ? " " + st : "") + '">' +
+      '<span class="ti">' + (s.icon || "") + "</span>" +
+      '<span class="tl">' + esc(s.label || "") + "</span>" +
+      '<span class="tv">' + (s.value != null ? String(s.value) : "--") + unit + "</span>" +
+      "</div>";
+  }
+
   function buildHud(hud, data) {
-    hud.innerHTML = "";
-    if (!data || data.enabled === false || data.ok === false) return;
-    var html = (data.sensors || []).map(buildGauge).join("");
+    var titleHtml = hudCfg.title ? '<div class="hud-title">' + esc(hudCfg.title) + "</div>" : "";
+    if (!data || data.enabled === false || data.ok === false) {
+      hud.innerHTML = titleHtml;
+      return;
+    }
+    var html = titleHtml;
+    if (hudCfg.mode === "text") {
+      html += '<div class="hud-text">' + (data.sensors || []).map(buildTextRow).join("") + "</div>";
+    } else {
+      html += (data.sensors || []).map(buildGauge).join("");
+    }
     (data.alarms || []).forEach(function (label) {
-      html += '<div class="alarm">⚠ ' + label + '</div>';
+      html += '<div class="alarm">⚠ ' + esc(label) + "</div>";
     });
     hud.innerHTML = html;
   }
@@ -360,6 +405,7 @@
 
   // ---- Painel de ajustes do HUD ----
   var settingsEl = document.getElementById("hudSettings");
+  var cfgMode = document.getElementById("cfgMode");
   var cfgPos = document.getElementById("cfgPos");
   var cfgScale = document.getElementById("cfgScale");
   var cfgScaleVal = document.getElementById("cfgScaleVal");
@@ -370,8 +416,14 @@
   var cfgWarn = document.getElementById("cfgColorWarn");
   var cfgCrit = document.getElementById("cfgColorCrit");
   var cfgText = document.getElementById("cfgColorText");
+  var cfgTitle = document.getElementById("cfgTitle");
+  var cfgTitleSize = document.getElementById("cfgTitleSize");
+  var cfgTitleSizeVal = document.getElementById("cfgTitleSizeVal");
+  var cfgTitleFont = document.getElementById("cfgTitleFont");
+  var cfgTitleColor = document.getElementById("cfgTitleColor");
 
   function syncControls() {
+    cfgMode.value = hudCfg.mode;
     cfgPos.value = hudCfg.pos;
     cfgScale.value = Math.round(hudCfg.scale * 100);
     cfgScaleVal.textContent = Math.round(hudCfg.scale * 100) + "%";
@@ -382,6 +434,11 @@
     cfgWarn.value = hudCfg.colorWarn;
     cfgCrit.value = hudCfg.colorCrit;
     cfgText.value = hudCfg.colorText;
+    cfgTitle.value = hudCfg.title;
+    cfgTitleSize.value = hudCfg.titleSize;
+    cfgTitleSizeVal.textContent = hudCfg.titleSize + "px";
+    cfgTitleFont.value = hudCfg.titleFont;
+    cfgTitleColor.value = hudCfg.titleColor;
   }
 
   function applyStyleOnly() { applyAllHuds(); saveHudCfg(); }
@@ -390,6 +447,7 @@
   document.getElementById("hudCfgBtn").onclick = function () {
     settingsEl.classList.toggle("hidden");
   };
+  cfgMode.onchange = function () { hudCfg.mode = cfgMode.value; applyWithRebuild(); };
   cfgPos.onchange = function () { hudCfg.pos = cfgPos.value; applyStyleOnly(); };
   cfgScale.oninput = function () {
     hudCfg.scale = (+cfgScale.value) / 100;
@@ -406,6 +464,14 @@
   cfgWarn.oninput = function () { hudCfg.colorWarn = cfgWarn.value; applyWithRebuild(); };
   cfgCrit.oninput = function () { hudCfg.colorCrit = cfgCrit.value; applyWithRebuild(); };
   cfgText.oninput = function () { hudCfg.colorText = cfgText.value; applyStyleOnly(); };
+  cfgTitle.oninput = function () { hudCfg.title = cfgTitle.value; applyWithRebuild(); };
+  cfgTitleSize.oninput = function () {
+    hudCfg.titleSize = +cfgTitleSize.value;
+    cfgTitleSizeVal.textContent = cfgTitleSize.value + "px";
+    applyStyleOnly();
+  };
+  cfgTitleFont.onchange = function () { hudCfg.titleFont = cfgTitleFont.value; applyStyleOnly(); };
+  cfgTitleColor.oninput = function () { hudCfg.titleColor = cfgTitleColor.value; applyStyleOnly(); };
   document.getElementById("cfgReset").onclick = function () {
     for (var k in HUD_DEFAULTS) hudCfg[k] = HUD_DEFAULTS[k];
     syncControls();
