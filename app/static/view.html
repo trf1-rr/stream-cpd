@@ -4,30 +4,47 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Camera</title>
+<link rel="stylesheet" href="/static/hud.css">
 <style>
-  html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
-  #v { position: fixed; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #000; }
+  :root { --text: #e6edf3; --muted: #8b949e; --border: #30363d; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; background: #000; overflow: hidden; }
+  .screen { position: fixed; inset: 0; background: #000; }
+  #v { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #000; }
   #status {
-    position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
-    color: #8b949e; font: 14px system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    color: var(--muted); font: 14px system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     text-align: center; padding: 20px; pointer-events: none;
   }
   #status.hidden { display: none; }
-  #fs {
-    position: fixed; top: 14px; right: 14px; z-index: 5;
+  .toolbar {
+    position: fixed; top: 14px; right: 14px; z-index: 30; display: flex; gap: 8px;
+    opacity: .35; transition: opacity .2s;
+  }
+  .toolbar:hover { opacity: 1; }
+  .toolbar button {
     background: rgba(0, 0, 0, .5); color: #fff; border: 1px solid rgba(255, 255, 255, .25);
     border-radius: 8px; padding: 8px 12px; font: 13px system-ui, sans-serif; cursor: pointer;
-    -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); opacity: .35; transition: opacity .2s;
+    -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
   }
-  #fs:hover { opacity: 1; background: rgba(0, 0, 0, .75); }
+  .toolbar button:hover { background: rgba(0, 0, 0, .78); }
 </style>
 </head>
 <body>
-<video id="v" muted autoplay playsinline></video>
-<div id="status">Conectando...</div>
-<button id="fs" title="Tela cheia (ou tecle F / duplo clique)">⛶ Tela cheia</button>
+<div class="screen">
+  <video id="v" muted autoplay playsinline></video>
+  <div id="status">Conectando...</div>
+  <div class="hud" id="viewHud"></div>
+</div>
+
+<div class="toolbar">
+  <button id="hudCfgBtn" title="Ajustar sensores">⚙</button>
+  <button id="fs" title="Tela cheia (F ou duplo clique)">⛶</button>
+</div>
+<div id="refreshCountdown" class="refresh-chip" title="Tempo até a próxima leitura dos sensores — clique para atualizar agora">⟳ 60s</div>
 
 <script src="/static/hls.min.js"></script>
+<script src="/static/hud.js"></script>
 <script>
 (function () {
   "use strict";
@@ -35,7 +52,7 @@
   var channel = m ? m[1] : "1";
   var params = new URLSearchParams(location.search);
   var subtype = params.get("subtype");
-  if (subtype === null) subtype = "0"; // padrao: stream principal (HD) em tela cheia
+  if (subtype === null) subtype = "0"; // padrao: stream principal (HD)
   var src = "/stream/" + channel + "/index.m3u8?subtype=" + subtype;
 
   var video = document.getElementById("v");
@@ -98,8 +115,14 @@
   document.addEventListener("keydown", function (e) {
     if (e.key === "f" || e.key === "F") toggleFs();
   });
+
+  // Overlay de sensores (compartilhado com a tela principal via hud.js)
+  SensorHUD.register(document.getElementById("viewHud"));
+  SensorHUD.start();
+
   document.addEventListener("visibilitychange", function () {
-    if (document.hidden) destroy(); else load();
+    if (document.hidden) { destroy(); SensorHUD.stop(); }
+    else { load(); SensorHUD.start(); }
   });
   load();
 })();

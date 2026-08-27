@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Monitor de Cameras</title>
+<link rel="stylesheet" href="/static/hud.css">
 <style>
   :root {
     --bg: #0d1117; --panel: #161b22; --border: #30363d;
@@ -58,104 +59,6 @@
   }
   .cam .status.hidden { display: none; }
   .cam .status.error { color: var(--danger); }
-  /* HUD de sensores (velocimetros) sobreposto ao video */
-  .cam .hud {
-    position: absolute; top: 44px; left: 12px; z-index: 5;
-    display: flex; gap: 12px; align-items: flex-start; flex-wrap: wrap;
-    pointer-events: none; font-variant-numeric: tabular-nums;
-  }
-  .cam .hud.hidden { display: none; }
-  .cam .hud .gauge {
-    position: relative; width: 132px; height: 132px;
-    background: rgba(13, 17, 23, var(--hud-bg-alpha, .5));
-    -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, .13); border-radius: 16px;
-    box-shadow: 0 4px 18px rgba(0, 0, 0, .45);
-  }
-  .cam .hud .gauge svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-  .cam .hud .gauge .icon {
-    position: absolute; top: 20px; left: 0; right: 0; text-align: center;
-    font-size: 22px; line-height: 1; z-index: 2;
-  }
-  .cam .hud .gauge .val {
-    position: absolute; bottom: 15px; left: 0; right: 0; text-align: center;
-    font-size: 24px; font-weight: 800; line-height: 1; color: var(--hud-text, #e6edf3);
-    text-shadow: 0 1px 4px rgba(0, 0, 0, .75); z-index: 2;
-  }
-  .cam .hud .gauge .val small { font-size: 12px; font-weight: 500; color: var(--muted); margin-left: 1px; }
-  .cam .hud .gauge.warn .val { color: var(--hud-warn, #f0b429); }
-  .cam .hud .gauge.crit .val { color: var(--hud-crit, #f85149); }
-  .cam .hud .alarm {
-    display: flex; align-items: center; gap: 6px;
-    background: rgba(248, 81, 73, .92); color: #fff; border-radius: 12px;
-    padding: 8px 13px; font-size: 13px; font-weight: 700; white-space: nowrap;
-    box-shadow: 0 4px 16px rgba(248, 81, 73, .5);
-    animation: hudpulse 1.3s ease-in-out infinite; align-self: center;
-  }
-  @keyframes hudpulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
-  /* Titulo do HUD */
-  .cam .hud .hud-title {
-    width: 100%; font-weight: 700; line-height: 1.15;
-    font-size: var(--hud-title-size, 16px);
-    color: var(--hud-title-color, #e6edf3);
-    font-family: var(--hud-title-font, inherit);
-    text-shadow: 0 1px 5px rgba(0, 0, 0, .85); margin-bottom: 1px;
-  }
-  /* Modo somente texto */
-  .cam .hud .hud-text {
-    background: rgba(13, 17, 23, var(--hud-bg-alpha, .5));
-    -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, .13); border-radius: 12px;
-    padding: 10px 13px; display: grid; gap: 7px; min-width: 158px;
-    box-shadow: 0 4px 18px rgba(0, 0, 0, .45);
-  }
-  .cam .hud .hud-text .trow { display: flex; align-items: center; gap: 9px; font-size: 16px; }
-  .cam .hud .hud-text .ti { font-size: 19px; line-height: 1; }
-  .cam .hud .hud-text .tl { color: var(--muted); flex: 1; white-space: nowrap; }
-  .cam .hud .hud-text .tv { font-weight: 800; color: var(--hud-text, #e6edf3); }
-  .cam .hud .hud-text .tv small { font-size: .7em; font-weight: 500; color: var(--muted); margin-left: 1px; }
-  .cam .hud .hud-text .trow.warn .tv { color: var(--hud-warn, #f0b429); }
-  .cam .hud .hud-text .trow.crit .tv { color: var(--hud-crit, #f85149); }
-  /* Painel de ajustes do HUD */
-  #hudCfgBtn { padding: 6px 10px; }
-  .settings {
-    position: fixed; top: 60px; right: 16px; z-index: 50; width: 268px;
-    background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
-    box-shadow: 0 10px 34px rgba(0, 0, 0, .55); padding: 14px; display: grid; gap: 12px;
-  }
-  .settings.hidden { display: none; }
-  .settings h3 { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
-  .settings .row { display: grid; gap: 5px; }
-  .settings .row > span { font-size: 12px; color: var(--muted); display: flex; justify-content: space-between; }
-  .settings select, .settings input[type=range], .settings input[type=text] { width: 100%; }
-  .settings input[type=text] {
-    background: #21262d; color: var(--text); border: 1px solid var(--border);
-    border-radius: 5px; padding: 5px 8px; font-size: 12px;
-  }
-  .settings hr { border: none; border-top: 1px solid var(--border); margin: 2px 0; }
-  .settings input[type=range] { accent-color: var(--accent); }
-  .settings .colors { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-  .settings .colors label { display: grid; gap: 3px; justify-items: center; font-size: 10px; color: var(--muted); }
-  .settings input[type=color] {
-    width: 100%; height: 26px; padding: 0; border: 1px solid var(--border);
-    border-radius: 5px; background: #21262d; cursor: pointer;
-  }
-  .settings .foot { display: flex; justify-content: space-between; align-items: center; }
-  .settings .foot button { padding: 5px 10px; font-size: 12px; }
-  .settings .note { font-size: 10px; color: var(--muted); line-height: 1.4; }
-  /* Regressiva flutuante sobre a tela de monitoramento */
-  .refresh-chip {
-    position: fixed; bottom: 16px; right: 16px; z-index: 20;
-    display: flex; align-items: center; gap: 6px;
-    font-size: 13px; font-weight: 600; color: var(--text); font-variant-numeric: tabular-nums;
-    background: rgba(13, 17, 23, .62); -webkit-backdrop-filter: blur(9px); backdrop-filter: blur(9px);
-    border: 1px solid rgba(255, 255, 255, .16); border-radius: 999px;
-    padding: 8px 14px; cursor: pointer; white-space: nowrap; min-width: 74px;
-    justify-content: center; box-shadow: 0 4px 16px rgba(0, 0, 0, .45);
-    transition: border-color .15s, background .15s;
-  }
-  .refresh-chip:hover { border-color: var(--accent); background: rgba(13, 17, 23, .8); }
-  .refresh-chip.hidden { display: none; }
   .actions { margin-left: auto; display: flex; gap: 6px; pointer-events: auto; }
   .actions button { padding: 2px 8px; font-size: 11px; background: #0008; }
 </style>
@@ -184,83 +87,8 @@
 
 <div id="refreshCountdown" class="refresh-chip" title="Tempo até a próxima leitura dos sensores — clique para atualizar agora">⟳ 60s</div>
 
-<div id="hudSettings" class="settings hidden">
-  <h3>Ajustar sensores</h3>
-  <div class="row">
-    <span>Exibição</span>
-    <select id="cfgMode">
-      <option value="gauge">Velocímetro</option>
-      <option value="text">Somente texto</option>
-    </select>
-  </div>
-  <div class="row">
-    <span>Posição</span>
-    <select id="cfgPos">
-      <option value="top-left">Superior esquerda</option>
-      <option value="top-right">Superior direita</option>
-      <option value="bottom-left">Inferior esquerda</option>
-      <option value="bottom-right">Inferior direita</option>
-      <option value="top-center">Superior centro</option>
-      <option value="bottom-center">Inferior centro</option>
-    </select>
-  </div>
-  <div class="row">
-    <span>Tamanho <b id="cfgScaleVal"></b></span>
-    <input type="range" id="cfgScale" min="60" max="180" step="5">
-  </div>
-  <div class="row">
-    <span>Opacidade do fundo <b id="cfgOpacityVal"></b></span>
-    <input type="range" id="cfgOpacity" min="0" max="95" step="5">
-  </div>
-  <div class="row">
-    <span>Fonte</span>
-    <select id="cfgFont">
-      <option value="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif">Sistema</option>
-      <option value="'Segoe UI Semibold', 'Segoe UI', Roboto, sans-serif">Segoe UI</option>
-      <option value="ui-monospace, SFMono-Regular, Consolas, monospace">Monoespaçada</option>
-      <option value="Georgia, 'Times New Roman', serif">Serifada</option>
-      <option value="'Arial Narrow', 'Segoe UI', sans-serif">Condensada</option>
-    </select>
-  </div>
-  <div class="row">
-    <span>Cores</span>
-    <div class="colors">
-      <label>Normal<input type="color" id="cfgColorOk"></label>
-      <label>Alerta<input type="color" id="cfgColorWarn"></label>
-      <label>Crítico<input type="color" id="cfgColorCrit"></label>
-      <label>Texto<input type="color" id="cfgColorText"></label>
-    </div>
-  </div>
-  <hr>
-  <div class="row">
-    <span>Título</span>
-    <input type="text" id="cfgTitle" placeholder="(sem título)" maxlength="40">
-  </div>
-  <div class="row">
-    <span>Título: tamanho <b id="cfgTitleSizeVal"></b></span>
-    <input type="range" id="cfgTitleSize" min="10" max="34" step="1">
-  </div>
-  <div class="row">
-    <span>Título: fonte</span>
-    <select id="cfgTitleFont">
-      <option value="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif">Sistema</option>
-      <option value="'Segoe UI Semibold', 'Segoe UI', Roboto, sans-serif">Segoe UI</option>
-      <option value="ui-monospace, SFMono-Regular, Consolas, monospace">Monoespaçada</option>
-      <option value="Georgia, 'Times New Roman', serif">Serifada</option>
-      <option value="'Arial Narrow', 'Segoe UI', sans-serif">Condensada</option>
-    </select>
-  </div>
-  <div class="row">
-    <span>Título: cor</span>
-    <input type="color" id="cfgTitleColor" style="height:28px">
-  </div>
-  <div class="foot">
-    <span class="note">Salvo neste navegador.</span>
-    <button id="cfgReset">Restaurar padrão</button>
-  </div>
-</div>
-
 <script src="/static/hls.min.js"></script>
+<script src="/static/hud.js"></script>
 <script src="/static/player.js"></script>
 </body>
 </html>
