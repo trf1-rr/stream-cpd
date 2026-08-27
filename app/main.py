@@ -90,6 +90,20 @@ async def index() -> HTMLResponse:
     )
 
 
+@app.get("/view/{channel}", response_class=HTMLResponse)
+async def view(channel: int) -> HTMLResponse:
+    """Pagina de uma unica camera ocupando a tela inteira.
+
+    Aceita ?subtype=0|1 (padrao 0 = principal/HD). O canal e lido do caminho
+    pelo proprio HTML, entao a mesma pagina serve qualquer canal.
+    """
+    _validate(channel, settings.rtsp_subtype)
+    return HTMLResponse(
+        (STATIC_DIR / "view.html").read_text(encoding="utf-8"),
+        headers=NO_CACHE,
+    )
+
+
 @app.get("/healthz")
 async def healthz() -> dict:
     return {"status": "ok", "streams": len(manager.streams)}

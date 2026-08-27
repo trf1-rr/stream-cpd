@@ -78,6 +78,7 @@ Abra **http://localhost:8080**.
 | Rota | Descrição |
 |---|---|
 | `GET /` | Player com grade de câmeras |
+| `GET /view/{canal}?subtype=0` | Uma câmera ocupando a tela inteira |
 | `GET /stream/{canal}/index.m3u8?subtype=1` | Playlist HLS — **cole esta URL no VLC/OBS** |
 | `GET /stream/{canal}/seg_00001.ts` | Segmento de vídeo |
 | `GET /api/channels` | Canais configurados |

@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Camera</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
+  #v { position: fixed; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #000; }
+  #status {
+    position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+    color: #8b949e; font: 14px system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    text-align: center; padding: 20px; pointer-events: none;
+  }
+  #status.hidden { display: none; }
+  #fs {
+    position: fixed; top: 14px; right: 14px; z-index: 5;
+    background: rgba(0, 0, 0, .5); color: #fff; border: 1px solid rgba(255, 255, 255, .25);
+    border-radius: 8px; padding: 8px 12px; font: 13px system-ui, sans-serif; cursor: pointer;
+    -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); opacity: .35; transition: opacity .2s;
+  }
+  #fs:hover { opacity: 1; background: rgba(0, 0, 0, .75); }
+</style>
+</head>
+<body>
+<video id="v" muted autoplay playsinline></video>
+<div id="status">Conectando...</div>
+<button id="fs" title="Tela cheia (ou tecle F / duplo clique)">⛶ Tela cheia</button>
+
+<script src="/static/hls.min.js"></script>
+<script>
+(function () {
+  "use strict";
+  var m = location.pathname.match(/\/view\/(\d+)/);
+  var channel = m ? m[1] : "1";
+  var params = new URLSearchParams(location.search);
+  var subtype = params.get("subtype");
+  if (subtype === null) subtype = "0"; // padrao: stream principal (HD) em tela cheia
+  var src = "/stream/" + channel + "/index.m3u8?subtype=" + subtype;
+
+  var video = document.getElementById("v");
+  var status = document.getElementById("status");
+  var hls = null, retry = 0, timer = null;
+  document.title = "Camera " + channel;
+
+  function setStatus(msg) {
+    if (msg === null) { status.className = "hidden"; }
+    else { status.className = ""; status.textContent = msg; }
+  }
+  function destroy() { if (hls) { hls.destroy(); hls = null; } }
+  function scheduleRetry(reason) {
+    retry += 1;
+    var delay = Math.min(2000 * retry, 15000);
+    setStatus(reason + " - nova tentativa em " + (delay / 1000) + "s");
+    clearTimeout(timer);
+    timer = setTimeout(load, delay);
+  }
+  function load() {
+    destroy();
+    setStatus("Conectando a camera " + channel + "...");
+    if (!window.Hls || !Hls.isSupported()) {
+      if (video.canPlayType("application/vnd.apple.mpegurl")) {
+        video.src = src;
+        video.addEventListener("loadeddata", function () { retry = 0; setStatus(null); });
+        video.addEventListener("error", function () { scheduleRetry("Falha no stream"); });
+        video.play().catch(function () {});
+        return;
+      }
+      setStatus("Navegador sem suporte a HLS");
+      return;
+    }
+    hls = new Hls({
+      lowLatencyMode: true, liveSyncDurationCount: 2, maxBufferLength: 6,
+      backBufferLength: 10, manifestLoadingTimeOut: 30000,
+      manifestLoadingMaxRetry: 2, fragLoadingTimeOut: 20000
+    });
+    hls.on(Hls.Events.MANIFEST_PARSED, function () { video.play().catch(function () {}); });
+    hls.on(Hls.Events.FRAG_BUFFERED, function () { retry = 0; setStatus(null); });
+    hls.on(Hls.Events.ERROR, function (_evt, data) {
+      if (!data.fatal) return;
+      if (data.type === Hls.ErrorTypes.NETWORK_ERROR) scheduleRetry("Camera indisponivel");
+      else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) hls.recoverMediaError();
+      else scheduleRetry("Erro fatal");
+    });
+    hls.loadSource(src);
+    hls.attachMedia(video);
+  }
+  function toggleFs() {
+    var el = document.documentElement;
+    var cur = document.fullscreenElement || document.webkitFullscreenElement;
+    if (cur) { (document.exitFullscreen || document.webkitExitFullscreen).call(document); return; }
+    if (el.requestFullscreen) el.requestFullscreen().catch(function () {});
+    else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+    else if (video.webkitEnterFullscreen) video.webkitEnterFullscreen();
+  }
+  document.getElementById("fs").onclick = toggleFs;
+  video.addEventListener("dblclick", toggleFs);
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "f" || e.key === "F") toggleFs();
+  });
+  document.addEventListener("visibilitychange", function () {
+    if (document.hidden) destroy(); else load();
+  });
+  load();
+})();
+</script>
+</body>
+</html>
