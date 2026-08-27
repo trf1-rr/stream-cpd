@@ -10,6 +10,7 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.types import Scope
 
 from .config import settings
 from .streamer import manager
@@ -54,7 +55,21 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+class RevalidateStatic(StaticFiles):
+    """Estaticos com 'no-cache': o navegador sempre revalida via ETag.
+
+    Sem isso o browser aplica cache heuristico e pode servir um player.js
+    antigo apos um deploy. Com ETag presente, arquivo inalterado responde
+    304 (barato) e arquivo alterado baixa a versao nova automaticamente.
+    """
+
+    async def get_response(self, path: str, scope: Scope):
+        response = await super().get_response(path, scope)
+        response.headers["Cache-Control"] = "no-cache"
+        return response
+
+
+app.mount("/static", RevalidateStatic(directory=str(STATIC_DIR)), name="static")
 
 
 def _validate(channel: int, subtype: int) -> None:
@@ -66,7 +81,10 @@ def _validate(channel: int, subtype: int) -> None:
 
 @app.get("/", response_class=HTMLResponse)
 async def index() -> HTMLResponse:
-    return HTMLResponse((STATIC_DIR / "index.html").read_text(encoding="utf-8"))
+    return HTMLResponse(
+        (STATIC_DIR / "index.html").read_text(encoding="utf-8"),
+        headers=NO_CACHE,
+    )
 
 
 @app.get("/healthz")
