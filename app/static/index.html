@@ -143,6 +143,12 @@
   .settings .foot { display: flex; justify-content: space-between; align-items: center; }
   .settings .foot button { padding: 5px 10px; font-size: 12px; }
   .settings .note { font-size: 10px; color: var(--muted); line-height: 1.4; }
+  .countdown {
+    font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums;
+    background: #21262d; border: 1px solid var(--border); border-radius: 6px;
+    padding: 6px 10px; cursor: pointer; white-space: nowrap; min-width: 62px; text-align: center;
+  }
+  .countdown:hover { border-color: #6e7681; color: var(--text); }
   .actions { margin-left: auto; display: flex; gap: 6px; pointer-events: auto; }
   .actions button { padding: 2px 8px; font-size: 11px; background: #0008; }
 </style>
@@ -164,6 +170,7 @@
     </select>
   </label>
   <button id="toggleHud">Sensores: on</button>
+  <span id="refreshCountdown" class="countdown" title="Tempo até a próxima leitura dos sensores — clique para atualizar agora">⟳ 60s</span>
   <button id="hudCfgBtn" title="Ajustar sensores">⚙</button>
   <button id="reload">Recarregar tudo</button>
 </header>

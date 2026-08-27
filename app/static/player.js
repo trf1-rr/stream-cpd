@@ -11,6 +11,9 @@
   var lastSensors = null;
   var hudOn = true;
   var hudTimer = null;
+  var POLL_SECONDS = 60;
+  var countdown = POLL_SECONDS;
+  var refreshEl = document.getElementById("refreshCountdown");
 
   var HUD_DEFAULTS = {
     mode: "gauge",             // "gauge" (velocimetro) | "text" (somente texto)
@@ -198,10 +201,30 @@
       .catch(function () {});
   }
 
+  function updateCountdownLabel() {
+    if (refreshEl) refreshEl.textContent = "⟳ " + countdown + "s";
+  }
+
+  // Um unico ticker de 1s: mostra a regressiva e consulta ao zerar.
+  function tickHud() {
+    countdown -= 1;
+    if (countdown <= 0) {
+      pollSensors();
+      countdown = POLL_SECONDS;
+    }
+    updateCountdownLabel();
+  }
+
+  function forceRefresh() {
+    pollSensors();
+    countdown = POLL_SECONDS;
+    updateCountdownLabel();
+  }
+
   function startHud() {
     if (hudTimer) return;
-    pollSensors();
-    hudTimer = setInterval(pollSensors, 5000);
+    forceRefresh();
+    hudTimer = setInterval(tickHud, 1000);
   }
 
   function stopHud() {
@@ -393,6 +416,8 @@
   layoutSel.onchange = function () { grid.className = "grid cols-" + layoutSel.value; };
   subtypeSel.onchange = function () { render(channels); };
   document.getElementById("reload").onclick = function () { render(channels); };
+
+  if (refreshEl) refreshEl.onclick = forceRefresh;
 
   var toggleHudBtn = document.getElementById("toggleHud");
   toggleHudBtn.onclick = function () {
