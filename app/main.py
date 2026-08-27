@@ -1,8 +1,10 @@
 """Gateway RTSP -> HLS: expoe cameras Dahua/Intelbras em HTTP para o navegador."""
 from __future__ import annotations
 
+import asyncio
 import logging
 import re
+import time
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -12,7 +14,8 @@ from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.types import Scope
 
-from .config import settings
+from . import snmp
+from .config import SNMP_ALARMS, SNMP_SENSORS, settings
 from .streamer import manager
 
 logging.basicConfig(
@@ -103,6 +106,85 @@ async def list_channels() -> dict:
 @app.get("/api/streams")
 async def list_streams() -> dict:
     return {"streams": [s.info() for s in manager.streams.values()]}
+
+
+_sensor_cache: dict = {"ts": 0.0, "data": None}
+_sensor_lock = asyncio.Lock()
+
+
+def _to_number(raw) -> float | None:
+    if raw is None:
+        return None
+    try:
+        return float(str(raw).strip().replace(",", "."))
+    except (TypeError, ValueError):
+        return None
+
+
+@app.get("/api/sensors")
+async def sensors() -> dict:
+    """Le os sensores do Conflex via SNMP para o overlay do player.
+
+    Resultado cacheado por alguns segundos: varios clientes/cameras compartilham
+    a mesma leitura em vez de martelar o agente.
+    """
+    if not settings.snmp_enabled:
+        return {"enabled": False, "sensors": [], "alarms": []}
+
+    async with _sensor_lock:
+        now = time.monotonic()
+        cached = _sensor_cache["data"]
+        if cached is not None and now - _sensor_cache["ts"] < 3.0:
+            return cached
+
+        oids = [s["oid"] for s in SNMP_SENSORS] + [a["oid"] for a in SNMP_ALARMS]
+        try:
+            raw = await asyncio.to_thread(
+                snmp.get_many,
+                settings.snmp_host,
+                oids,
+                settings.snmp_community,
+                settings.snmp_port,
+                1.5,
+            )
+        except Exception as exc:  # rede/parso: degrada sem derrubar o player
+            log.warning("SNMP falhou: %s", exc)
+            data = {"enabled": True, "ok": False, "sensors": [], "alarms": []}
+            _sensor_cache.update(ts=now, data=data)
+            return data
+
+        sensors_out = []
+        for spec in SNMP_SENSORS:
+            num = _to_number(raw.get(spec["oid"]))
+            value = (
+                round(num * spec.get("scale", 1), spec.get("digits", 1))
+                if num is not None
+                else None
+            )
+            sensors_out.append(
+                {
+                    "label": spec["label"],
+                    "value": value,
+                    "unit": spec.get("unit", ""),
+                    "warn": spec.get("warn"),
+                    "crit": spec.get("crit"),
+                }
+            )
+
+        alarms_out = [
+            a["label"]
+            for a in SNMP_ALARMS
+            if (_to_number(raw.get(a["oid"])) or 0) != 0
+        ]
+
+        data = {
+            "enabled": True,
+            "ok": True,
+            "sensors": sensors_out,
+            "alarms": alarms_out,
+        }
+        _sensor_cache.update(ts=now, data=data)
+        return data
 
 
 @app.post("/api/streams/{channel}/stop")

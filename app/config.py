@@ -66,6 +66,12 @@ class Settings:
     start_timeout: int = _env_int("START_TIMEOUT", 20)     # segundos aguardando 1o playlist
     restart_backoff: int = _env_int("RESTART_BACKOFF", 3)  # segundos entre reinicios
 
+    # SNMP: le sensores do Conflex e sobrepoe no video (overlay do player)
+    snmp_enabled: bool = _env_bool("SNMP_ENABLED", True)
+    snmp_host: str = os.getenv("SNMP_HOST", "172.29.4.22")
+    snmp_community: str = os.getenv("SNMP_COMMUNITY", "public")
+    snmp_port: int = _env_int("SNMP_PORT", 161)
+
     def rtsp_url(self, channel: int, subtype: int | None = None) -> str:
         from urllib.parse import quote
 
@@ -82,3 +88,21 @@ class Settings:
 
 
 settings = Settings()
+
+
+# Sensores exibidos no overlay. 'scale' multiplica o valor bruto do SNMP
+# (o Conflex reporta temperatura em decimos: 214 -> 21.4 C). 'warn' e 'crit'
+# opcionais colorem o valor no player.
+SNMP_SENSORS: list[dict] = [
+    {"oid": "1.3.6.1.4.1.42588.3.4.2.0.0", "label": "Temp. Interna",
+     "unit": "°C", "scale": 0.1, "digits": 1, "warn": 24, "crit": 27},
+    {"oid": "1.3.6.1.4.1.42588.3.4.2.1.0", "label": "Umidade",
+     "unit": "%", "scale": 1, "digits": 0, "warn": 65, "crit": 75},
+]
+
+# Alarmes digitais (0 = inativo). Aparecem como selo vermelho quando != 0.
+SNMP_ALARMS: list[dict] = [
+    {"oid": "1.3.6.1.4.1.42588.3.1.3.0.0", "label": "Temperatura Alta"},
+    {"oid": "1.3.6.1.4.1.42588.3.1.3.1.0", "label": "Umidade Alta"},
+    {"oid": "1.3.6.1.4.1.42588.3.1.3.2.0", "label": "Temperatura Baixa"},
+]

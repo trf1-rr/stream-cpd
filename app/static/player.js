@@ -7,6 +7,51 @@
   var layoutSel = document.getElementById("layout");
   var players = [];
 
+  // ---- Overlay de sensores (SNMP) ----
+  var lastSensors = null;
+  var hudOn = true;
+  var hudTimer = null;
+
+  function buildHud(hud, data) {
+    hud.innerHTML = "";
+    if (!data || data.enabled === false || data.ok === false) return;
+    (data.sensors || []).forEach(function (s) {
+      var cls = "metric";
+      if (s.value != null && s.crit != null && s.value >= s.crit) cls += " crit";
+      else if (s.value != null && s.warn != null && s.value >= s.warn) cls += " warn";
+      var m = el("div", cls);
+      m.appendChild(el("div", "k", s.label));
+      var v = el("div", "v", s.value == null ? "--" : String(s.value));
+      if (s.unit) v.appendChild(el("small", null, s.unit));
+      m.appendChild(v);
+      hud.appendChild(m);
+    });
+    (data.alarms || []).forEach(function (label) {
+      hud.appendChild(el("div", "alarm", "⚠ " + label));
+    });
+  }
+
+  function refreshHuds() {
+    players.forEach(function (p) { buildHud(p.hud, lastSensors); });
+  }
+
+  function pollSensors() {
+    fetch("/api/sensors")
+      .then(function (r) { return r.json(); })
+      .then(function (data) { lastSensors = data; refreshHuds(); })
+      .catch(function () {});
+  }
+
+  function startHud() {
+    if (hudTimer) return;
+    pollSensors();
+    hudTimer = setInterval(pollSensors, 5000);
+  }
+
+  function stopHud() {
+    if (hudTimer) { clearInterval(hudTimer); hudTimer = null; }
+  }
+
   function el(tag, cls, text) {
     var n = document.createElement(tag);
     if (cls) n.className = cls;
@@ -43,10 +88,14 @@
     bar.appendChild(actions);
 
     this.status = el("div", "status", "Conectando...");
+    this.hud = el("div", "hud" + (hudOn ? "" : " hidden"));
 
     this.root.appendChild(this.video);
     this.root.appendChild(this.status);
+    this.root.appendChild(this.hud);
     this.root.appendChild(bar);
+
+    if (lastSensors) buildHud(this.hud, lastSensors);
   }
 
   Player.prototype.setState = function (state, message) {
@@ -168,6 +217,7 @@
       grid.appendChild(p.root);
       p.load();
     });
+    startHud();
   }
 
   var channels = [];
@@ -187,12 +237,23 @@
   subtypeSel.onchange = function () { render(channels); };
   document.getElementById("reload").onclick = function () { render(channels); };
 
+  var toggleHudBtn = document.getElementById("toggleHud");
+  toggleHudBtn.onclick = function () {
+    hudOn = !hudOn;
+    players.forEach(function (p) {
+      p.hud.className = "hud" + (hudOn ? "" : " hidden");
+    });
+    toggleHudBtn.textContent = "Sensores: " + (hudOn ? "on" : "off");
+  };
+
   // Pausa os streams quando a aba fica oculta, liberando o ffmpeg no servidor
   document.addEventListener("visibilitychange", function () {
     if (document.hidden) {
+      stopHud();
       players.forEach(function (p) { p.destroy(); });
     } else if (channels.length) {
       players.forEach(function (p) { p.load(); });
+      startHud();
     }
   });
 })();

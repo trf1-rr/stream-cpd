@@ -82,6 +82,7 @@ Abra **http://localhost:8080**.
 | `GET /stream/{canal}/seg_00001.ts` | Segmento de vídeo |
 | `GET /api/channels` | Canais configurados |
 | `GET /api/streams` | Status dos processos ffmpeg ativos |
+| `GET /api/sensors` | Leituras SNMP (temperatura/umidade) do overlay |
 | `POST /api/streams/{canal}/stop` | Encerra o ffmpeg de um canal |
 | `GET /healthz` | Health check |
 
@@ -119,6 +120,8 @@ que estão sendo vistos.
 | `TRANSCODE` | `false` | `true` **só** se a câmera for H.265 |
 | `HLS_TIME` | `1` | Segmento menor = menos latência, mais requisições |
 | `IDLE_TIMEOUT` | `30` | Segundos sem cliente até matar o ffmpeg |
+| `SNMP_ENABLED` | `true` | Overlay de temperatura/umidade no vídeo; `false` desliga |
+| `SNMP_HOST` / `SNMP_COMMUNITY` / `SNMP_PORT` | `172.29.4.22` / `public` / `161` | Controlador Conflex lido por SNMP v1 (OIDs em `app/config.py`) |
 
 ### Outros fabricantes
 

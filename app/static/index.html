@@ -58,6 +58,36 @@
   }
   .cam .status.hidden { display: none; }
   .cam .status.error { color: var(--danger); }
+  /* HUD de sensores sobreposto ao video */
+  .cam .hud {
+    position: absolute; top: 40px; left: 10px; z-index: 5;
+    display: flex; gap: 8px; align-items: stretch; flex-wrap: wrap;
+    pointer-events: none; font-variant-numeric: tabular-nums;
+  }
+  .cam .hud.hidden { display: none; }
+  .cam .hud .metric {
+    background: rgba(13, 17, 23, .52);
+    -webkit-backdrop-filter: blur(9px); backdrop-filter: blur(9px);
+    border: 1px solid rgba(255, 255, 255, .14); border-radius: 10px;
+    padding: 5px 11px; min-width: 58px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, .4);
+  }
+  .cam .hud .metric .k {
+    color: var(--muted); font-size: 10px; font-weight: 500;
+    text-transform: uppercase; letter-spacing: .5px; white-space: nowrap;
+  }
+  .cam .hud .metric .v { font-size: 21px; font-weight: 700; line-height: 1.15; color: var(--text); }
+  .cam .hud .metric .v small { font-size: 11px; font-weight: 400; color: var(--muted); margin-left: 2px; }
+  .cam .hud .metric.warn .v { color: #d29922; }
+  .cam .hud .metric.crit .v { color: var(--danger); }
+  .cam .hud .alarm {
+    display: flex; align-items: center; gap: 6px;
+    background: rgba(248, 81, 73, .9); color: #fff; border-radius: 10px;
+    padding: 5px 11px; font-size: 12px; font-weight: 700; white-space: nowrap;
+    box-shadow: 0 2px 12px rgba(248, 81, 73, .45);
+    animation: hudpulse 1.3s ease-in-out infinite;
+  }
+  @keyframes hudpulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
   .actions { margin-left: auto; display: flex; gap: 6px; pointer-events: auto; }
   .actions button { padding: 2px 8px; font-size: 11px; background: #0008; }
 </style>
@@ -78,6 +108,7 @@
       <option value="3">3 colunas</option>
     </select>
   </label>
+  <button id="toggleHud">Sensores: on</button>
   <button id="reload">Recarregar tudo</button>
 </header>
 <main><div id="grid" class="grid cols-2"></div></main>
