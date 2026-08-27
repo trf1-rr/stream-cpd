@@ -425,6 +425,7 @@
     players.forEach(function (p) {
       p.hud.className = "hud" + (hudOn ? "" : " hidden");
     });
+    if (refreshEl) refreshEl.className = "refresh-chip" + (hudOn ? "" : " hidden");
     toggleHudBtn.textContent = "Sensores: " + (hudOn ? "on" : "off");
   };
 

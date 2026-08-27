@@ -143,12 +143,19 @@
   .settings .foot { display: flex; justify-content: space-between; align-items: center; }
   .settings .foot button { padding: 5px 10px; font-size: 12px; }
   .settings .note { font-size: 10px; color: var(--muted); line-height: 1.4; }
-  .countdown {
-    font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums;
-    background: #21262d; border: 1px solid var(--border); border-radius: 6px;
-    padding: 6px 10px; cursor: pointer; white-space: nowrap; min-width: 62px; text-align: center;
+  /* Regressiva flutuante sobre a tela de monitoramento */
+  .refresh-chip {
+    position: fixed; bottom: 16px; right: 16px; z-index: 20;
+    display: flex; align-items: center; gap: 6px;
+    font-size: 13px; font-weight: 600; color: var(--text); font-variant-numeric: tabular-nums;
+    background: rgba(13, 17, 23, .62); -webkit-backdrop-filter: blur(9px); backdrop-filter: blur(9px);
+    border: 1px solid rgba(255, 255, 255, .16); border-radius: 999px;
+    padding: 8px 14px; cursor: pointer; white-space: nowrap; min-width: 74px;
+    justify-content: center; box-shadow: 0 4px 16px rgba(0, 0, 0, .45);
+    transition: border-color .15s, background .15s;
   }
-  .countdown:hover { border-color: #6e7681; color: var(--text); }
+  .refresh-chip:hover { border-color: var(--accent); background: rgba(13, 17, 23, .8); }
+  .refresh-chip.hidden { display: none; }
   .actions { margin-left: auto; display: flex; gap: 6px; pointer-events: auto; }
   .actions button { padding: 2px 8px; font-size: 11px; background: #0008; }
 </style>
@@ -170,11 +177,12 @@
     </select>
   </label>
   <button id="toggleHud">Sensores: on</button>
-  <span id="refreshCountdown" class="countdown" title="Tempo até a próxima leitura dos sensores — clique para atualizar agora">⟳ 60s</span>
   <button id="hudCfgBtn" title="Ajustar sensores">⚙</button>
   <button id="reload">Recarregar tudo</button>
 </header>
 <main><div id="grid" class="grid cols-2"></div></main>
+
+<div id="refreshCountdown" class="refresh-chip" title="Tempo até a próxima leitura dos sensores — clique para atualizar agora">⟳ 60s</div>
 
 <div id="hudSettings" class="settings hidden">
   <h3>Ajustar sensores</h3>
