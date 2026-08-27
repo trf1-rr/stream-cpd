@@ -32,9 +32,13 @@
     bar.appendChild(this.dot);
     bar.appendChild(el("span", null, "Canal " + channel));
     var actions = el("div", "actions");
-    var btn = el("button", null, "Reconectar");
     var self = this;
+    var fsBtn = el("button", null, "⛶ Tela cheia");
+    fsBtn.title = "Tela cheia";
+    fsBtn.onclick = function () { self.toggleFullscreen(); };
+    var btn = el("button", null, "Reconectar");
     btn.onclick = function () { self.load(); };
+    actions.appendChild(fsBtn);
     actions.appendChild(btn);
     bar.appendChild(actions);
 
@@ -52,6 +56,23 @@
     } else {
       this.status.className = "status" + (state === "error" ? " error" : "");
       this.status.textContent = message || "";
+    }
+  };
+
+  Player.prototype.toggleFullscreen = function () {
+    var doc = document;
+    var current = doc.fullscreenElement || doc.webkitFullscreenElement;
+    if (current) {
+      (doc.exitFullscreen || doc.webkitExitFullscreen).call(doc);
+      return;
+    }
+    if (this.root.requestFullscreen) {
+      this.root.requestFullscreen().catch(function () {});
+    } else if (this.root.webkitRequestFullscreen) {
+      this.root.webkitRequestFullscreen();
+    } else if (this.video.webkitEnterFullscreen) {
+      // iOS Safari: so o elemento <video> vai a tela cheia
+      this.video.webkitEnterFullscreen();
     }
   };
 
@@ -155,7 +176,6 @@
     .then(function (r) { return r.json(); })
     .then(function (cfg) {
       channels = cfg.channels;
-      document.getElementById("host").textContent = "- " + cfg.host;
       subtypeSel.value = String(cfg.default_subtype);
       render(channels);
     })

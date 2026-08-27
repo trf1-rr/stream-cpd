@@ -79,8 +79,6 @@ async def list_channels() -> dict:
     return {
         "channels": settings.channels,
         "default_subtype": settings.rtsp_subtype,
-        "host": settings.rtsp_host,
-        "transcode": settings.transcode,
     }
 
 
