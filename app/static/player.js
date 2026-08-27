@@ -12,6 +12,58 @@
   var hudOn = true;
   var hudTimer = null;
 
+  var HUD_DEFAULTS = {
+    pos: "top-left",
+    scale: 1.0,
+    opacity: 0.5,
+    font: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+    colorOk: "#3fb950",
+    colorWarn: "#f0b429",
+    colorCrit: "#f85149",
+    colorText: "#e6edf3"
+  };
+
+  function loadHudCfg() {
+    var c = {};
+    for (var k in HUD_DEFAULTS) c[k] = HUD_DEFAULTS[k];
+    try {
+      var saved = JSON.parse(localStorage.getItem("hudCfg") || "{}");
+      for (var s in saved) if (s in c) c[s] = saved[s];
+    } catch (e) {}
+    return c;
+  }
+
+  function saveHudCfg() {
+    try { localStorage.setItem("hudCfg", JSON.stringify(hudCfg)); } catch (e) {}
+  }
+
+  var hudCfg = loadHudCfg();
+
+  function styleHud(hud) {
+    var c = hudCfg;
+    hud.style.top = hud.style.right = hud.style.bottom = hud.style.left = "";
+    var isRight = c.pos.indexOf("right") >= 0;
+    var isCenter = c.pos.indexOf("center") >= 0;
+    var isBottom = c.pos.indexOf("bottom") >= 0;
+    if (isBottom) hud.style.bottom = "12px"; else hud.style.top = "44px";
+    var tx = "";
+    if (isCenter) { hud.style.left = "50%"; tx = "translateX(-50%) "; }
+    else if (isRight) hud.style.right = "12px";
+    else hud.style.left = "12px";
+    hud.style.transformOrigin =
+      (isCenter ? "center" : isRight ? "right" : "left") + " " + (isBottom ? "bottom" : "top");
+    hud.style.transform = tx + "scale(" + c.scale + ")";
+    hud.style.fontFamily = c.font;
+    hud.style.setProperty("--hud-bg-alpha", c.opacity);
+    hud.style.setProperty("--hud-text", c.colorText);
+    hud.style.setProperty("--hud-warn", c.colorWarn);
+    hud.style.setProperty("--hud-crit", c.colorCrit);
+  }
+
+  function applyAllHuds() {
+    players.forEach(function (p) { styleHud(p.hud); });
+  }
+
   // Velocimetro: arco de 270deg com vao embaixo (225deg -> 495deg)
   var G_START = 225, G_SWEEP = 270, GC = 60, GR = 46;
 
@@ -40,7 +92,7 @@
     var state = "";
     if (hasVal && s.crit != null && s.value >= s.crit) state = "crit";
     else if (hasVal && s.warn != null && s.value >= s.warn) state = "warn";
-    var color = state === "crit" ? "#f85149" : state === "warn" ? "#f0b429" : "#3fb950";
+    var color = state === "crit" ? hudCfg.colorCrit : state === "warn" ? hudCfg.colorWarn : hudCfg.colorOk;
 
     var track = arcPath(GR, G_START, G_START + G_SWEEP);
     var fill = arcPath(GR, G_START, va);
@@ -148,6 +200,7 @@
 
     this.status = el("div", "status", "Conectando...");
     this.hud = el("div", "hud" + (hudOn ? "" : " hidden"));
+    styleHud(this.hud);
 
     this.root.appendChild(this.video);
     this.root.appendChild(this.status);
@@ -304,6 +357,62 @@
     });
     toggleHudBtn.textContent = "Sensores: " + (hudOn ? "on" : "off");
   };
+
+  // ---- Painel de ajustes do HUD ----
+  var settingsEl = document.getElementById("hudSettings");
+  var cfgPos = document.getElementById("cfgPos");
+  var cfgScale = document.getElementById("cfgScale");
+  var cfgScaleVal = document.getElementById("cfgScaleVal");
+  var cfgOpacity = document.getElementById("cfgOpacity");
+  var cfgOpacityVal = document.getElementById("cfgOpacityVal");
+  var cfgFont = document.getElementById("cfgFont");
+  var cfgOk = document.getElementById("cfgColorOk");
+  var cfgWarn = document.getElementById("cfgColorWarn");
+  var cfgCrit = document.getElementById("cfgColorCrit");
+  var cfgText = document.getElementById("cfgColorText");
+
+  function syncControls() {
+    cfgPos.value = hudCfg.pos;
+    cfgScale.value = Math.round(hudCfg.scale * 100);
+    cfgScaleVal.textContent = Math.round(hudCfg.scale * 100) + "%";
+    cfgOpacity.value = Math.round(hudCfg.opacity * 100);
+    cfgOpacityVal.textContent = Math.round(hudCfg.opacity * 100) + "%";
+    cfgFont.value = hudCfg.font;
+    cfgOk.value = hudCfg.colorOk;
+    cfgWarn.value = hudCfg.colorWarn;
+    cfgCrit.value = hudCfg.colorCrit;
+    cfgText.value = hudCfg.colorText;
+  }
+
+  function applyStyleOnly() { applyAllHuds(); saveHudCfg(); }
+  function applyWithRebuild() { applyAllHuds(); refreshHuds(); saveHudCfg(); }
+
+  document.getElementById("hudCfgBtn").onclick = function () {
+    settingsEl.classList.toggle("hidden");
+  };
+  cfgPos.onchange = function () { hudCfg.pos = cfgPos.value; applyStyleOnly(); };
+  cfgScale.oninput = function () {
+    hudCfg.scale = (+cfgScale.value) / 100;
+    cfgScaleVal.textContent = cfgScale.value + "%";
+    applyStyleOnly();
+  };
+  cfgOpacity.oninput = function () {
+    hudCfg.opacity = (+cfgOpacity.value) / 100;
+    cfgOpacityVal.textContent = cfgOpacity.value + "%";
+    applyStyleOnly();
+  };
+  cfgFont.onchange = function () { hudCfg.font = cfgFont.value; applyStyleOnly(); };
+  cfgOk.oninput = function () { hudCfg.colorOk = cfgOk.value; applyWithRebuild(); };
+  cfgWarn.oninput = function () { hudCfg.colorWarn = cfgWarn.value; applyWithRebuild(); };
+  cfgCrit.oninput = function () { hudCfg.colorCrit = cfgCrit.value; applyWithRebuild(); };
+  cfgText.oninput = function () { hudCfg.colorText = cfgText.value; applyStyleOnly(); };
+  document.getElementById("cfgReset").onclick = function () {
+    for (var k in HUD_DEFAULTS) hudCfg[k] = HUD_DEFAULTS[k];
+    syncControls();
+    applyWithRebuild();
+  };
+
+  syncControls();
 
   // Pausa os streams quando a aba fica oculta, liberando o ffmpeg no servidor
   document.addEventListener("visibilitychange", function () {

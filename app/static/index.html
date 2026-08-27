@@ -67,7 +67,7 @@
   .cam .hud.hidden { display: none; }
   .cam .hud .gauge {
     position: relative; width: 132px; height: 132px;
-    background: rgba(13, 17, 23, .5);
+    background: rgba(13, 17, 23, var(--hud-bg-alpha, .5));
     -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, .13); border-radius: 16px;
     box-shadow: 0 4px 18px rgba(0, 0, 0, .45);
@@ -79,12 +79,12 @@
   }
   .cam .hud .gauge .val {
     position: absolute; bottom: 15px; left: 0; right: 0; text-align: center;
-    font-size: 24px; font-weight: 800; line-height: 1; color: var(--text);
+    font-size: 24px; font-weight: 800; line-height: 1; color: var(--hud-text, #e6edf3);
     text-shadow: 0 1px 4px rgba(0, 0, 0, .75); z-index: 2;
   }
   .cam .hud .gauge .val small { font-size: 12px; font-weight: 500; color: var(--muted); margin-left: 1px; }
-  .cam .hud .gauge.warn .val { color: #f0b429; }
-  .cam .hud .gauge.crit .val { color: var(--danger); }
+  .cam .hud .gauge.warn .val { color: var(--hud-warn, #f0b429); }
+  .cam .hud .gauge.crit .val { color: var(--hud-crit, #f85149); }
   .cam .hud .alarm {
     display: flex; align-items: center; gap: 6px;
     background: rgba(248, 81, 73, .92); color: #fff; border-radius: 12px;
@@ -93,6 +93,28 @@
     animation: hudpulse 1.3s ease-in-out infinite; align-self: center;
   }
   @keyframes hudpulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
+  /* Painel de ajustes do HUD */
+  #hudCfgBtn { padding: 6px 10px; }
+  .settings {
+    position: fixed; top: 60px; right: 16px; z-index: 50; width: 268px;
+    background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+    box-shadow: 0 10px 34px rgba(0, 0, 0, .55); padding: 14px; display: grid; gap: 12px;
+  }
+  .settings.hidden { display: none; }
+  .settings h3 { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
+  .settings .row { display: grid; gap: 5px; }
+  .settings .row > span { font-size: 12px; color: var(--muted); display: flex; justify-content: space-between; }
+  .settings select, .settings input[type=range] { width: 100%; }
+  .settings input[type=range] { accent-color: var(--accent); }
+  .settings .colors { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .settings .colors label { display: grid; gap: 3px; justify-items: center; font-size: 10px; color: var(--muted); }
+  .settings input[type=color] {
+    width: 100%; height: 26px; padding: 0; border: 1px solid var(--border);
+    border-radius: 5px; background: #21262d; cursor: pointer;
+  }
+  .settings .foot { display: flex; justify-content: space-between; align-items: center; }
+  .settings .foot button { padding: 5px 10px; font-size: 12px; }
+  .settings .note { font-size: 10px; color: var(--muted); line-height: 1.4; }
   .actions { margin-left: auto; display: flex; gap: 6px; pointer-events: auto; }
   .actions button { padding: 2px 8px; font-size: 11px; background: #0008; }
 </style>
@@ -114,9 +136,56 @@
     </select>
   </label>
   <button id="toggleHud">Sensores: on</button>
+  <button id="hudCfgBtn" title="Ajustar sensores">⚙</button>
   <button id="reload">Recarregar tudo</button>
 </header>
 <main><div id="grid" class="grid cols-2"></div></main>
+
+<div id="hudSettings" class="settings hidden">
+  <h3>Ajustar sensores</h3>
+  <div class="row">
+    <span>Posição</span>
+    <select id="cfgPos">
+      <option value="top-left">Superior esquerda</option>
+      <option value="top-right">Superior direita</option>
+      <option value="bottom-left">Inferior esquerda</option>
+      <option value="bottom-right">Inferior direita</option>
+      <option value="top-center">Superior centro</option>
+      <option value="bottom-center">Inferior centro</option>
+    </select>
+  </div>
+  <div class="row">
+    <span>Tamanho <b id="cfgScaleVal"></b></span>
+    <input type="range" id="cfgScale" min="60" max="180" step="5">
+  </div>
+  <div class="row">
+    <span>Opacidade do fundo <b id="cfgOpacityVal"></b></span>
+    <input type="range" id="cfgOpacity" min="0" max="95" step="5">
+  </div>
+  <div class="row">
+    <span>Fonte</span>
+    <select id="cfgFont">
+      <option value="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif">Sistema</option>
+      <option value="'Segoe UI Semibold', 'Segoe UI', Roboto, sans-serif">Segoe UI</option>
+      <option value="ui-monospace, SFMono-Regular, Consolas, monospace">Monoespaçada</option>
+      <option value="Georgia, 'Times New Roman', serif">Serifada</option>
+      <option value="'Arial Narrow', 'Segoe UI', sans-serif">Condensada</option>
+    </select>
+  </div>
+  <div class="row">
+    <span>Cores</span>
+    <div class="colors">
+      <label>Normal<input type="color" id="cfgColorOk"></label>
+      <label>Alerta<input type="color" id="cfgColorWarn"></label>
+      <label>Crítico<input type="color" id="cfgColorCrit"></label>
+      <label>Texto<input type="color" id="cfgColorText"></label>
+    </div>
+  </div>
+  <div class="foot">
+    <span class="note">Salvo neste navegador.</span>
+    <button id="cfgReset">Restaurar padrão</button>
+  </div>
+</div>
 
 <script src="/static/hls.min.js"></script>
 <script src="/static/player.js"></script>
